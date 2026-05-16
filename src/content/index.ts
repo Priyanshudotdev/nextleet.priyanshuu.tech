@@ -52,7 +52,9 @@ const scrapeAndSend = async () => {
     const language = document.querySelector('#editor button[aria-haspopup][aria-expanded]')?.textContent;
     const textContent:HTMLCollection|undefined = document.querySelector(".monaco-mouse-cursor-text")?.children;
     let userCode:string|null = "";
-    const problemName = "random-9900";
+    const problemName = location.href.split("/problems/")[1].split("/submissions/")[0];
+
+    // chrome.runtime.sendMessage({type:"HEALTH", message: "DONE"});
 
     if(textContent){
         Array.from(textContent).map((elem) => {
@@ -67,9 +69,9 @@ const scrapeAndSend = async () => {
     try {
         chrome.runtime.sendMessage({ type: "PING" }, () => {
         if (chrome.runtime.lastError) return;
-        
-        chrome.runtime.sendMessage({ type: "SUBMISSION_DETECTED", payload });
-        });
+    });
+    
+    chrome.runtime.sendMessage({ type: "SUBMISSION_DETECTED", payload });
 
     } catch (error) {
         console.log("Extension reloaded, refresh the tab");
