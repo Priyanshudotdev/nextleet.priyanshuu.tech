@@ -70,7 +70,7 @@ const connectToGithub = async (sendResponse: (response?: any) => void) => {
 
     chrome.tabs.create({ url: "https://github.com/login/device" });
 
-    const token = pollForToken(response.device_code, response.interval);
+    const token = await pollForToken(response.device_code, response.interval);
 
     if (!token) {
       await storage.set("auth_state", {

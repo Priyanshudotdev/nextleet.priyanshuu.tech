@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 type LayoutProps = {
   children: ReactNode;
@@ -39,7 +39,6 @@ const DECORATIVE_IMAGES = [
 ];
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-
   return (
     <main className={MAIN_STYLES}>
       <div className="absolute inset-0 z-10 pointer-events-none">

@@ -33,37 +33,41 @@ export const initiateGithubAuth = async () => {
 export const pollForToken = async (device_code: string, interval: number) => {
   let currentInterval = interval;
 
-  const timer = setInterval(async () => {
-    try {
-      const response = await fetch("https://github.com/login/oauth/access_token", {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          client_id: CLIENT_ID,
-          device_code,
-          grant_type: "urn:ietf:params:oauth:grant-type:device_code",
-        }),
-      });
+  while (true) {
+    await new Promise((resolve) => setTimeout(resolve, currentInterval * 1000));
 
-      const data = await response.json();
+    const response = await fetch("https://github.com/login/oauth/access_token", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        client_id: CLIENT_ID,
+        device_code,
+        grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+      }),
+    });
 
-      if (data.access_token) {
-        clearInterval(timer);
-        await storage.set("token", data.access_token);
-      } else if (data.error === "slow_down") {
-        // adjust interval and restart polling
-        clearInterval(timer);
-        const nextInterval = data.interval ?? currentInterval + 5;
-        pollForToken(device_code, nextInterval);
-      } else if (data.error === "expired_token") {
-        clearInterval(timer);
-      }
-    } catch (err) {
-      clearInterval(timer);
-      throw err;
+    const data = await response.json();
+
+    if (data.access_token) {
+      await storage.set("token", data.access_token);
+      await storage.set("timepass", data);
+      return data.access_token as string;
     }
-  }, currentInterval * 1000);
+
+    if (data.error === "authorization_pending") {
+      continue;
+    }
+
+    if (data.error === "slow_down") {
+      currentInterval = data.interval ?? currentInterval + 5;
+      continue;
+    }
+
+    if (data.error === "access_denied" || data.error === "expired_token") {
+      return null;
+    }
+  }
 };
