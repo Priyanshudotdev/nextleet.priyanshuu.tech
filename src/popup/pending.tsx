@@ -1,53 +1,97 @@
-import { useNavigate } from "react-router-dom";
-import Footer from "./components/footer";
-import Layout from "./components/layout";
-import Logo from "./components/logo";
-import Button from "./components/button";
-import { useAuth } from "../shared/use-auth";
+import { useEffect, useState } from "react"
+import { BiCopy } from "react-icons/bi"
+import { toast } from "sonner"
+import { storage } from "../shared/storage"
+import Button from "./components/button"
+import Footer from "./components/footer"
+import Layout from "./components/layout"
+import Logo from "./components/logo"
+import RoseImage from "./components/rose-image"
 
-export const PendingPage = () => {
-  const navigate = useNavigate();
-  const { logout } = useAuth();
+const PendingSection = () => {
+    const [userCode, setUserCode] = useState<string>()
 
-  const handleRetry = () => {
-    navigate("/login", { replace: true });
-  };
+    useEffect(() => {
+        const loadUserCode = async () => {
+            const state = await storage.get<{ status?: string; user_code?: string }>(
+                "auth_state"
+            );
+            setUserCode(state?.user_code);
+        };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate("/", { replace: true });
-    } catch (err) {
-      console.error("Logout failed:", err);
-    }
-  };
+        loadUserCode();
 
-  return (
-    <Layout>
-      <div className="h-120 gap-y-6 text-5xl flex flex-col items-center justify-center px-4">
+        const pollInterval = setInterval(async () => {
+            const state = await storage.get<{ status?: string }>(
+                "auth_state"
+            );
+            if (state?.status === "completed") {
+                window.location.hash = "#/dashboard";
+                clearInterval(pollInterval);
+            }
+            if (state?.status === "failed") {
+                window.location.hash = "#/";
+                clearInterval(pollInterval);
+            }
+        }, 1000);
+
+        return () => clearInterval(pollInterval);
+    }, [])
+
+    return (
+     <Layout>
+      <div className="h-120 gap-y-8 text-5xl flex flex-col items-center justify-center">
         <Logo />
-        <div className="flex flex-col items-center justify-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center">
-            <span className="text-2xl">⏳</span>
+
+        <div className="px-4 flex flex-col items-center justify-center gap-4">
+          <div className="text-2xl gap-x-1 flex items-center justify-center">
+            <h1 className="font-semibold">Authorization</h1>
+            <RoseImage />
+            <b className="text-black/90">Pending</b>
           </div>
-          <div className="text-center">
-            <h1 className="text-2xl font-semibold mb-2">Setup in Progress</h1>
-            <p className="text-center leading-5 text-[#71717A] text-sm">
-              Your authentication is incomplete. Please complete the setup process to continue.
-            </p>
-          </div>
-        </div>
-        <div className="w-full flex flex-col gap-2">
-          <Button onClick={handleRetry}>Continue Setup</Button>
-          <button
-            onClick={handleLogout}
-            className="w-full px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+
+          <Button
+            onClick={async () => {
+              if (userCode) {
+                await navigator.clipboard.writeText(userCode);
+                toast.success("Code Copied!!");
+              }
+            }}
+            type="button"
+            variant="outline"
+            aria-label="Copy authorization code"
+            className="z-10"
           >
-            Start Over
-          </button>
+            <p className="text-2xl font-semibold tracking-wider text-neutral-900">
+              {userCode ? userCode : "Loading..."}
+            </p>
+
+            <span className="flex h-10 w-10 items-center justify-center rounded-full text-rose-600 transition-colors duration-200">
+              <BiCopy className="size-5" />
+            </span>
+          </Button>
+
+          {
+            userCode ? (
+              <p className="text-center leading-4 text-[#71717A] text-sm">
+            Click on the code to copy it
+            <br /> 
+            Enter this code into the Github Auth Tab
+          </p>
+            ): (
+              <p className="text-center leading-4 text-[#71717A] text-sm">Please wait your code is generating.</p>
+            )
+          }
         </div>
+
+        <p className="text-center text-sm text-neutral-500 px-6">
+          If authorization fails or expires, you will be redirected to home.
+        </p>
+
         <Footer />
       </div>
     </Layout>
-  );
-};
+  )
+}
+
+export default PendingSection
