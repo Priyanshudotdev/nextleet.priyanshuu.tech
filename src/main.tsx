@@ -8,7 +8,7 @@ import RepoSetupSection from './popup/repo-setup.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <div className="relative w-90 min-h-120 bg-blue-600">
+    <div className="relative w-90 min-h-120 text-[#2A2A2C] bg-[#FEF6F8]">
       <HashRouter>
       <Routes>
         <Route path='/index.html' element={<Navigate to="/" replace />} />
