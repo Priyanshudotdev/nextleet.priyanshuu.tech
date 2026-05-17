@@ -1,4 +1,3 @@
-
 const RoseImage = () => {
   return (
     <img

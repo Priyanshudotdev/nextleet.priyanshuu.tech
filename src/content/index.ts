@@ -9,73 +9,74 @@ let lastUrl = location.href;
 */
 
 const observer = new MutationObserver(() => {
-    if(location.href !== lastUrl){
-        lastUrl = location.href;
-        // run the on url change fn
-        onUrlChange();
-    }
-})
+  if (location.href !== lastUrl) {
+    lastUrl = location.href;
+    // run the on url change fn
+    onUrlChange();
+  }
+});
 
-observer.observe(document.body, {subtree: true,childList: true});
+observer.observe(document.body, { subtree: true, childList: true });
 
-// let userCode = ""; 
+// let userCode = "";
 
 // on url change fn
 const onUrlChange = () => {
-    // check if its leetcode and specifically the submission route or not
-    // eg : https://leetcode.com/problems/two-sum/submissions/2004032197/
-    if(location.href.includes("/submissions/")){
-        waitForElement(".monaco-mouse-cursor-text", scrapeAndSend)
-    }
-}
-
+  // check if its leetcode and specifically the submission route or not
+  // eg : https://leetcode.com/problems/two-sum/submissions/2004032197/
+  if (location.href.includes("/submissions/")) {
+    waitForElement(".monaco-mouse-cursor-text", scrapeAndSend);
+  }
+};
 
 // wait for dom to be loaded properly
-const waitForElement = (selector : string, callback: () => void) => {
-    const el = document.querySelector(selector);
+const waitForElement = (selector: string, callback: () => void) => {
+  const el = document.querySelector(selector);
 
-    if(el){
-        callback();
-        return;
+  if (el) {
+    callback();
+    return;
+  }
+
+  const timer = setInterval(() => {
+    if (document.querySelector(selector)) {
+      clearInterval(timer);
+      callback();
     }
-
-    const timer = setInterval(() => {
-        if(document.querySelector(selector)){
-            clearInterval(timer);
-            callback();
-        }
-    }, 500);
-
-}
+  }, 500);
+};
 
 const scrapeAndSend = async () => {
-    const language = document.querySelector('#editor button[aria-haspopup][aria-expanded]')?.textContent;
-    const textContent:HTMLCollection|undefined = document.querySelector(".monaco-mouse-cursor-text")?.children;
-    let userCode:string|null = "";
-    const problemName = location.href.split("/problems/")[1].split("/submissions/")[0];
+  const language = document.querySelector(
+    "#editor button[aria-haspopup][aria-expanded]"
+  )?.textContent;
+  const textContent: HTMLCollection | undefined = document.querySelector(
+    ".monaco-mouse-cursor-text"
+  )?.children;
+  let userCode: string | null = "";
+  const problemName = location.href.split("/problems/")[1].split("/submissions/")[0];
 
-    // chrome.runtime.sendMessage({type:"HEALTH", message: "DONE"});
+  // chrome.runtime.sendMessage({type:"HEALTH", message: "DONE"});
 
-    if(textContent){
-        Array.from(textContent).map((elem) => {
-            userCode += elem.textContent.trim() ?? "";
+  if (textContent) {
+    Array.from(textContent).map((elem) => {
+      userCode += elem.textContent.trim() ?? "";
     });
-    }
+  }
 
-    const payload = {language,userCode: userCode,problemName};
+  const payload = { language, userCode: userCode, problemName };
 
-    await chrome.storage.sync.set(payload);
-    
-    try {
-        chrome.runtime.sendMessage({ type: "PING" }, () => {
-        if (chrome.runtime.lastError) return;
+  await chrome.storage.sync.set(payload);
+
+  try {
+    chrome.runtime.sendMessage({ type: "PING" }, () => {
+      if (chrome.runtime.lastError) return;
     });
-    
+
     chrome.runtime.sendMessage({ type: "SUBMISSION_DETECTED", payload });
+  } catch (error) {
+    console.log("Extension reloaded, refresh the tab");
+  }
 
-    } catch (error) {
-        console.log("Extension reloaded, refresh the tab");
-    }
-
-    // chrome.runtime.onMessage()
-}
+  // chrome.runtime.onMessage()
+};

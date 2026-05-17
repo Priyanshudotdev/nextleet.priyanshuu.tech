@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
+    "lint": "eslint . && biome lint .",
+    "format:write": "biome format . --write",
+    "format:check": "biome format .",
+    "biome:check": "biome check .",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -26,6 +29,7 @@
     "webextension-polyfill": "^0.12.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.15",
     "@eslint/js": "^10.0.1",
     "@types/chrome": "^0.1.42",
     "@types/node": "^24.12.3",
