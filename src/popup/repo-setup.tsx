@@ -23,7 +23,6 @@ const RepoSetupSection = () => {
     return (
    <Layout>
             <section className="h-120 w-full flex items-center justify-center px-4">
-                <div className="z-10 w-full max-w-md rounded-2xl border border-rose-200/80 bg-white/85 p-6 shadow-[0_20px_60px_-30px_rgba(190,24,93,0.6)] backdrop-blur-sm">
                     <div className="flex flex-col gap-5 items-center text-center">
                         <Logo />
 
@@ -60,7 +59,6 @@ const RepoSetupSection = () => {
                             If authorization fails or expires, you will be redirected home.
                         </p>
                     </div>
-                </div>
                 <Footer />
             </section>
         </Layout>
