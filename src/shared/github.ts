@@ -1,5 +1,5 @@
 import { Octokit } from "octokit";
-import { cleanWhitespace, getLanguageExtension } from "./helper";
+import { getLanguageExtension } from "./helper";
 
 type PayloadType = {
     userCode: string;
@@ -21,12 +21,16 @@ const pushCodeToGithub = async (payloadData: PayloadType) => {
 
     // await storage.set("pretty", pretty);
 
-    let s = payloadData.userCode;
-    s = s.replace(/\/\*\-/g, "/*\n-");
-    s = s.replace(/\- /g, "\n- ");
-    s = s.replace(/(\.)([A-Z0-9])/g, "$1\n$2");
+    let s = payloadData.userCode
+    .replace(/\\n/g, '\n')
+    .replace(/\\r/g, '')      
+    .replace(/\\t/g, '\t'); ;
 
-    const cleanedContent = cleanWhitespace(payloadData.userCode);
+    // s = s.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
+    // s = s.replace(/\- /g, "\n- ");
+    // s = s.replace(/(\.)([A-Z0-9])/g, "$1\n$2");
+
+    // const cleanedContent = cleanWhitespace(payloadData.userCode);
 
     try {
         const sha = await getRepoShaId({
@@ -41,7 +45,7 @@ const pushCodeToGithub = async (payloadData: PayloadType) => {
             path: filePath,
             message: `Sync leetcode submission: ${payloadData.problemName}`,
             content: btoa(
-                String.fromCharCode(...new TextEncoder().encode(cleanedContent))
+                String.fromCharCode(...new TextEncoder().encode(s))
             ),
             sha: sha ?? "",
         });

@@ -60,7 +60,7 @@ const scrapeAndSend = async () => {
 
     if (textContent) {
         Array.from(textContent).map((elem) => {
-            userCode += elem.textContent.trim() ?? "";
+            userCode += `${(elem.textContent.trim() ?? "")} \n`;
         });
     }
 
