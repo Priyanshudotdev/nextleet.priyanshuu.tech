@@ -30,6 +30,7 @@ const DashboardPage = () => {
     const [bottomTab, setBottomTab] = useState<BottomNavTab>("dashboard");
     const [githubUser, setGithubUser] = useState<string>("User");
     const [repoName, setRepoName] = useState<string>("Repository");
+    const [repoUrl, setRepoUrl] = useState<string | null>(null);
 
     useEffect(() => {
         const loadData = async () => {
@@ -42,11 +43,14 @@ const DashboardPage = () => {
                     if (paths.length >= 2) {
                         setGithubUser(paths[0]);
                         setRepoName(paths[1]);
+                        setRepoUrl(`https://github.com/${paths[0]}/${paths[1]}`);
                     } else {
                         setRepoName(repo);
+                        setRepoUrl(repo);
                     }
                 } catch {
                     setRepoName(repo);
+                    setRepoUrl(repo);
                 }
             }
         };
@@ -61,8 +65,8 @@ const DashboardPage = () => {
     };
 
     const handleCopyRepo = () => {
-        const repoUrl = `https://github.com/${githubUser}/${repoName}`;
-        navigator.clipboard.writeText(repoUrl);
+        const repoLink = repoUrl ?? `https://github.com/${githubUser}/${repoName}`;
+        navigator.clipboard.writeText(repoLink);
     };
 
     return (
@@ -139,7 +143,7 @@ const DashboardPage = () => {
                                             </div>
                                             <div className="flex flex-col items-center gap-2">
                                                 <button 
-                                                    onClick={() => window.open(`https://github.com/${githubUser}/${repoName}`, "_blank")}
+                                                    onClick={() => window.open(repoUrl ?? `https://github.com/${githubUser}/${repoName}`, "_blank")}
                                                     className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-500 text-white shadow-lg shadow-rose-200 hover:bg-rose-600 transition-all active:scale-95"
                                                 >
                                                     <FiArrowUpRight size={20} />
