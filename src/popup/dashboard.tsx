@@ -30,7 +30,6 @@ const DashboardPage = () => {
     const [bottomTab, setBottomTab] = useState<BottomNavTab>("dashboard");
     const [githubUser, setGithubUser] = useState<string>("User");
     const [repoName, setRepoName] = useState<string>("Repository");
-    const [isSynced] = useState<boolean>(true);
 
     useEffect(() => {
         const loadData = async () => {
@@ -118,7 +117,7 @@ const DashboardPage = () => {
                                         <div className="text-center mb-8">
                                             <div className="relative inline-block mb-2">
                                                 <h2 className="text-4xl font-bold text-neutral-900 tracking-tight">
-                                                    {isSynced ? "Synced" : "Not Synced"}
+                                                    Synced
                                                 </h2>
                                                 <button className="absolute -right-8 top-1/2 -translate-y-1/2 p-1 text-neutral-400 hover:text-rose-500">
                                                     <BiRefresh size={20} />
