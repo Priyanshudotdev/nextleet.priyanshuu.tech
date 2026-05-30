@@ -1,436 +1,322 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-    BiCheck,
-    BiCode,
-    BiFile,
-    BiPencil,
+    BiCheckCircle,
+    BiChevronDown,
+    BiCog,
+    BiCopy,
+    BiHistory,
+    BiHomeAlt,
+    BiInfoCircle,
+    BiLinkExternal,
+    BiLogOut,
     BiRefresh,
-    BiTargetLock,
-    BiX,
+    BiSidebar,
+    BiStats,
 } from "react-icons/bi";
-import { IoLogoGithub } from "react-icons/io5";
+import { FiArrowUpRight, FiDownload, FiRepeat } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
+import { storage } from "../shared/storage";
 import Layout from "./components/layout";
+import Logo from "./components/logo";
 
-type Tab = "overview" | "syncs" | "settings";
-
-type Difficulty = "easy" | "med" | "hard";
-
-const STREAK_DAYS = [
-    { id: "mon", label: "M", status: "done" },
-    { id: "tue", label: "T", status: "done" },
-    { id: "wed", label: "W", status: "today" },
-    { id: "thu", label: "T", status: "missed" },
-    { id: "fri", label: "F", status: "future" },
-    { id: "sat", label: "S", status: "future" },
-    { id: "sun", label: "S", status: "future" },
-] as const;
-
-const RECENT_SYNCS: Array<{
-    name: string;
-    time: string;
-    lang: string;
-    difficulty: Difficulty;
-}> = [
-    { name: "two-sum", time: "2 min ago", lang: "TypeScript", difficulty: "easy" },
-    {
-        name: "longest-palindromic-substring",
-        time: "1 hr ago",
-        lang: "TypeScript",
-        difficulty: "med",
-    },
-    {
-        name: "median-of-two-sorted-arrays",
-        time: "yesterday",
-        lang: "TypeScript",
-        difficulty: "hard",
-    },
-    {
-        name: "reverse-integer",
-        time: "2 days ago",
-        lang: "TypeScript",
-        difficulty: "med",
-    },
-    {
-        name: "string-to-integer-atoi",
-        time: "3 days ago",
-        lang: "TypeScript",
-        difficulty: "med",
-    },
-];
-
-const difficultyClass: Record<Difficulty, string> = {
-    easy: "bg-emerald-100 text-emerald-800",
-    med: "bg-amber-100 text-amber-800",
-    hard: "bg-red-100 text-red-800",
-};
+type Tab = "status" | "history" | "settings";
+type BottomNavTab = "dashboard" | "stats" | "explore";
 
 const DashboardPage = () => {
-    const [activeTab, setActiveTab] = useState<Tab>("overview");
+    const navigate = useNavigate();
+    const [activeTab, setActiveTab] = useState<Tab>("status");
+    const [bottomTab, setBottomTab] = useState<BottomNavTab>("dashboard");
+    const [githubUser, setGithubUser] = useState<string>("User");
+    const [repoName, setRepoName] = useState<string>("Repository");
+    const [repoUrl, setRepoUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        const loadData = async () => {
+            const repo = await storage.get<string>("github_repo");
+            if (repo) {
+                // Extract repo name from URL if possible
+                try {
+                    const url = new URL(repo);
+                    const paths = url.pathname.split("/").filter(Boolean);
+                    if (paths.length >= 2) {
+                        setGithubUser(paths[0]);
+                        setRepoName(paths[1]);
+                        setRepoUrl(`https://github.com/${paths[0]}/${paths[1]}`);
+                    } else {
+                        setRepoName(repo);
+                        setRepoUrl(repo);
+                    }
+                } catch {
+                    setRepoName(repo);
+                    setRepoUrl(repo);
+                }
+            }
+        };
+        loadData();
+    }, []);
+
+    const handleLogout = async () => {
+        await storage.remove("token");
+        await storage.remove("auth_state");
+        await storage.remove("github_repo");
+        navigate("/login", { replace: true });
+    };
+
+    const handleCopyRepo = () => {
+        const repoLink = repoUrl ?? `https://github.com/${githubUser}/${repoName}`;
+        navigator.clipboard.writeText(repoLink);
+    };
 
     return (
         <Layout>
-            <section className="h-120 z-10 w-full">
-                <div className="z-10 mx-auto flex h-full w-full max-w-95 flex-col overflow-hidden bg-[#FEF6F8] shadow-[0_20px_25px_-5px_rgba(0,0,0,0.08),0_8px_10px_-6px_rgba(0,0,0,0.08)]">
-                    {/* <header className="shrink-0 bg-[#2A2A2C] px-4 py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-300">
-                  <Code2 size={15} className="text-[#2A2A2C]" />
-                </div>
-                <p className="text-sm font-medium">
-                  <span className="text-[#FEF6F8]">Leet</span>
-                  <span className="text-rose-300">Sync</span>
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-emerald-300" />
-                  <span className="text-[11px] text-zinc-400">connected</span>
-                </div>
-                <button
-                  type="button"
-                  className="flex items-center gap-1.5 rounded-md border border-zinc-700 px-2 py-1 text-[11px] text-zinc-400 transition-colors hover:border-rose-300 hover:text-rose-300"
-                >
-                  <LogOut size={12} />
-                  sign out
-                </button>
-              </div>
-            </div>
-          </header> */}
-
-                    {/* <div className="shrink-0 border-b border-rose-100 bg-white px-4 py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-300 text-xs font-medium text-[#2A2A2C]">
-                  PK
-                </div>
-                <div>
-                  <p className="text-[13px] font-medium leading-tight text-[#2A2A2C]">
-                    Priyanshu Kayarkar
-                  </p>
-                  <p className="text-[11px] text-zinc-500">@priyanshudotdev</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-2 py-1">
-                <IoLogoGithub size={11} className="text-[#2A2A2C]" />
-                <span className="text-[11px] font-medium text-[#2A2A2C]">Nexus</span>
-              </div>
-            </div>
-          </div> */}
-
-                    <nav className="shrink-0 border-b border-rose-100 bg-[#FEF6F8]">
-                        <div className="flex">
-                            {(["overview", "syncs", "settings"] as Tab[]).map((tab) => (
-                                <button
-                                    key={tab}
-                                    type="button"
-                                    onClick={() => setActiveTab(tab)}
-                                    className={`h-9 flex-1 border-b-2 text-[12px] font-medium capitalize transition-colors ${
-                                        activeTab === tab
-                                            ? "border-rose-300 text-[#2A2A2C]"
-                                            : "border-transparent text-zinc-400 hover:text-[#2A2A2C]"
-                                    }`}
-                                >
-                                    {tab}
-                                </button>
-                            ))}
+            <section className="h-120 w-full flex items-center justify-center">
+                <div className="z-10 mx-auto flex h-full w-full max-w-95 flex-col overflow-hidden bg-[#FEF6F8] shadow-xl">
+                    {/* Top Header */}
+                    <header className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-rose-100/50">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-200 text-rose-700 font-bold text-xs uppercase">
+                            {githubUser.charAt(0)}
                         </div>
-                    </nav>
+                        
+                        <div className="flex items-center gap-1 bg-white/50 px-3 py-1 rounded-full border border-rose-200 cursor-pointer hover:bg-white transition-colors">
+                            <Logo className="size-4" />
+                            <span className="text-xs font-semibold text-neutral-800">{githubUser}</span>
+                            <BiChevronDown className="text-neutral-500" />
+                            <div className="h-3 w-px bg-rose-200 mx-1" />
+                            <button onClick={handleCopyRepo} className="hover:text-rose-500 transition-colors">
+                                <BiCopy size={14} className="text-neutral-500" />
+                            </button>
+                        </div>
 
-                    <div className="flex-1 overflow-y-auto">
-                        {activeTab === "overview" && (
-                            <div className="space-y-4 p-4">
-                                <section>
-                                    <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.06em] text-zinc-500">
-                                        streak
-                                    </p>
-                                    <div className="flex justify-between gap-1.5">
-                                        {STREAK_DAYS.map((day) => (
-                                            <div
-                                                key={day.id}
-                                                className="flex flex-col items-center gap-1.5"
-                                            >
-                                                <div
-                                                    className={`relative flex h-8 w-8 items-center justify-center rounded-full ${
-                                                        day.status === "done"
-                                                            ? "bg-[#2A2A2C]"
-                                                            : day.status === "today"
-                                                              ? "border-2 border-[#2A2A2C] bg-rose-300"
-                                                              : day.status === "missed"
-                                                                ? "bg-rose-100"
-                                                                : "bg-rose-50"
-                                                    }`}
-                                                >
-                                                    {day.status === "done" && (
-                                                        <BiCheck
-                                                            size={14}
-                                                            className="text-rose-300"
-                                                        />
-                                                    )}
-                                                    {day.status === "today" && (
-                                                        <span className="h-1.5 w-1.5 rounded-full bg-[#2A2A2C]" />
-                                                    )}
-                                                    {day.status === "missed" && (
-                                                        <BiX
-                                                            size={12}
-                                                            className="text-zinc-400"
-                                                        />
-                                                    )}
-                                                    {day.status === "future" && (
-                                                        <span className="h-0.5 w-2 rounded-full bg-zinc-300" />
-                                                    )}
-                                                </div>
-                                                <span className="text-[10px] font-medium text-zinc-400">
-                                                    {day.label}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <p className="mt-3 text-[11px] text-zinc-500">
-                                        <span className="font-medium text-[#2A2A2C]">
-                                            5 day
-                                        </span>{" "}
-                                        streak this week
-                                    </p>
-                                </section>
+                        <button className="p-1.5 rounded-lg hover:bg-rose-100 transition-colors text-neutral-600">
+                            <BiSidebar size={20} />
+                        </button>
+                    </header>
 
-                                <div className="-mx-4 h-px bg-rose-100" />
-
-                                <section>
-                                    <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.06em] text-zinc-500">
-                                        synced stats
-                                    </p>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <article className="col-span-2 rounded-xl border border-rose-200 bg-white px-3.5 py-3">
-                                            <div className="flex items-start justify-between">
-                                                <div>
-                                                    <p className="text-[11px] text-zinc-400">
-                                                        total synced
-                                                    </p>
-                                                    <p className="text-[22px] font-medium text-[#2A2A2C]">
-                                                        44
-                                                    </p>
-                                                    <p className="mt-1 text-[11px] text-zinc-400">
-                                                        problems pushed to github
-                                                    </p>
-                                                </div>
-                                                <span className="rounded-md border border-rose-200 px-2 py-0.5 text-[10px] font-medium text-zinc-500">
-                                                    all time
-                                                </span>
-                                            </div>
-                                        </article>
-
-                                        <article className="rounded-xl border border-rose-200 bg-white px-3.5 py-3">
-                                            <p className="text-[22px] font-medium text-[#2A2A2C]">
-                                                22
-                                            </p>
-                                            <span className="mt-1 inline-block rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-800">
-                                                easy
-                                            </span>
-                                        </article>
-
-                                        <article className="rounded-xl border border-rose-200 bg-white px-3.5 py-3">
-                                            <p className="text-[22px] font-medium text-[#2A2A2C]">
-                                                14
-                                            </p>
-                                            <span className="mt-1 inline-block rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800">
-                                                med
-                                            </span>
-                                        </article>
-
-                                        <article className="col-span-2 flex items-center justify-between rounded-xl border border-rose-200 bg-white px-3.5 py-3">
-                                            <p className="text-[22px] font-medium text-[#2A2A2C]">
-                                                8
-                                            </p>
-                                            <span className="rounded-md bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-800">
-                                                hard
-                                            </span>
-                                        </article>
-                                    </div>
-                                </section>
-                            </div>
-                        )}
-
-                        {activeTab === "syncs" && (
-                            <div className="flex h-full flex-col">
-                                <div className="flex items-center justify-between border-b border-rose-100 px-4 py-2">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[11px] text-zinc-500">
-                                            sort by:
-                                        </span>
-                                        <select className="rounded-lg border border-rose-200 bg-transparent px-2 py-1 pr-6 text-[12px] text-[#2A2A2C] focus:outline-none">
-                                            <option>Last Submitted</option>
-                                            <option>Problem Name</option>
-                                            <option>Difficulty</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[11px] text-zinc-400">
-                                            updated 1m ago
-                                        </span>
+                    {/* Main Content Area */}
+                    <div className="flex-1 overflow-y-auto px-4 pb-4">
+                        {bottomTab === "dashboard" && (
+                            <>
+                                {/* Sub Navigation Tabs */}
+                                <nav className="flex justify-center gap-6 py-3 shrink-0">
+                                    {(["status", "history", "settings"] as Tab[]).map((tab) => (
                                         <button
-                                            type="button"
-                                            className="rounded-md p-1 transition-colors hover:bg-white"
-                                        >
-                                            <BiRefresh
-                                                size={12}
-                                                className="text-zinc-400"
-                                            />
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="p-4">
-                                    <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.06em] text-zinc-500">
-                                        recent syncs
-                                    </p>
-
-                                    {RECENT_SYNCS.map((sync, index) => (
-                                        <article
-                                            key={sync.name}
-                                            className={`flex h-12 items-center gap-3 ${
-                                                index !== RECENT_SYNCS.length - 1
-                                                    ? "border-b border-rose-100"
-                                                    : ""
+                                            key={tab}
+                                            onClick={() => setActiveTab(tab)}
+                                            className={`text-sm font-medium capitalize transition-colors ${
+                                                activeTab === tab
+                                                    ? "text-neutral-900"
+                                                    : "text-neutral-400 hover:text-neutral-600"
                                             }`}
                                         >
-                                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-rose-200 bg-rose-50">
-                                                <BiFile
-                                                    size={14}
-                                                    className="text-[#2A2A2C]"
-                                                />
-                                            </div>
-
-                                            <div className="min-w-0 flex-1">
-                                                <p className="truncate text-[12px] font-medium text-[#2A2A2C]">
-                                                    {sync.name}
-                                                </p>
-                                                <p className="text-[11px] text-zinc-400">
-                                                    {sync.time} · {sync.lang}
-                                                </p>
-                                            </div>
-
-                                            <div className="flex shrink-0 items-center gap-2">
-                                                <span
-                                                    className={`rounded-md px-2 py-0.5 text-[10px] font-medium ${difficultyClass[sync.difficulty]}`}
-                                                >
-                                                    {sync.difficulty}
-                                                </span>
-                                                <BiCheck
-                                                    size={14}
-                                                    className="text-emerald-300"
-                                                />
-                                            </div>
-                                        </article>
+                                            {tab}
+                                        </button>
                                     ))}
+                                </nav>
+
+                                {activeTab === "status" && (
+                                    <div className="flex flex-col items-center pt-4">
+                                        {/* Hero Status Section */}
+                                        <div className="text-center mb-8">
+                                            <div className="relative inline-block mb-2">
+                                                <h2 className="text-4xl font-bold text-neutral-900 tracking-tight">
+                                                    Synced
+                                                </h2>
+                                                <button className="absolute -right-8 top-1/2 -translate-y-1/2 p-1 text-neutral-400 hover:text-rose-500">
+                                                    <BiRefresh size={20} />
+                                                </button>
+                                            </div>
+                                            <div className="flex items-center justify-center gap-1.5">
+                                                <span className="text-emerald-500 font-medium text-sm">Successfully</span>
+                                                <span className="text-emerald-500/50 font-medium text-sm">pushed</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Action Buttons Row */}
+                                        <div className="flex justify-between w-full max-w-xs mb-8">
+                                            <div className="flex flex-col items-center gap-2">
+                                                <button className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-500 text-white shadow-lg shadow-rose-200 hover:bg-rose-600 transition-all active:scale-95">
+                                                    <FiDownload size={20} />
+                                                </button>
+                                                <span className="text-[11px] font-medium text-neutral-600">Sync</span>
+                                            </div>
+                                            <div className="flex flex-col items-center gap-2">
+                                                <button 
+                                                    onClick={() => window.open(repoUrl ?? `https://github.com/${githubUser}/${repoName}`, "_blank")}
+                                                    className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-500 text-white shadow-lg shadow-rose-200 hover:bg-rose-600 transition-all active:scale-95"
+                                                >
+                                                    <FiArrowUpRight size={20} />
+                                                </button>
+                                                <span className="text-[11px] font-medium text-neutral-600">Repo</span>
+                                            </div>
+                                            <div className="flex flex-col items-center gap-2">
+                                                <button 
+                                                    onClick={() => setActiveTab("settings")}
+                                                    className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-500 text-white shadow-lg shadow-rose-200 hover:bg-rose-600 transition-all active:scale-95"
+                                                >
+                                                    <FiRepeat size={20} />
+                                                </button>
+                                                <span className="text-[11px] font-medium text-neutral-600">Settings</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Banner / Alert */}
+                                        <div className="w-full bg-white/60 border border-rose-200 rounded-2xl p-4 flex items-start gap-3 mb-4">
+                                            <div className="h-10 w-10 shrink-0 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500">
+                                                <BiInfoCircle size={24} />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-sm font-semibold text-neutral-900">Beta Version</h4>
+                                                <p className="text-xs text-neutral-500 leading-relaxed mt-0.5">
+                                                    We are not storing any of your data except GitHub keys for now. Enjoy syncing!
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Item List (Recent Sync Placeholder) */}
+                                        <div className="w-full space-y-3">
+                                            <div className="flex items-center justify-between px-1">
+                                                <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Recent Activity</span>
+                                                <button className="text-xs font-medium text-rose-500 hover:underline">See all</button>
+                                            </div>
+                                            
+                                            <div className="group bg-white/40 hover:bg-white/60 border border-rose-100 rounded-2xl p-3 flex items-center gap-3 transition-colors cursor-pointer">
+                                                <div className="h-10 w-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600">
+                                                    <BiCheckCircle size={20} />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h5 className="text-sm font-semibold text-neutral-800 truncate">Connection Healthy</h5>
+                                                    <p className="text-xs text-neutral-500 truncate">GitHub Auth is active</p>
+                                                </div>
+                                                <div className="text-right shrink-0">
+                                                    <p className="text-sm font-bold text-neutral-800">Active</p>
+                                                    <p className="text-[10px] text-emerald-500 font-medium">Verified</p>
+                                                </div>
+                                            </div>
+
+                                            <button 
+                                                onClick={() => setActiveTab("history")}
+                                                className="w-full py-2 text-xs font-medium text-neutral-400 flex items-center justify-center gap-1.5 hover:text-neutral-600 transition-colors"
+                                            >
+                                                <BiHistory size={14} />
+                                                View sync history
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === "history" && (
+                                    <div className="flex flex-col items-center justify-center h-full pt-10 text-center">
+                                        <div className="h-16 w-16 bg-rose-100 rounded-full flex items-center justify-center text-rose-500 mb-4">
+                                            <BiHistory size={32} />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-neutral-900">Sync History</h3>
+                                        <p className="text-sm text-neutral-500 mt-2 max-w-[200px]">
+                                            Detailed history is coming soon in the next update.
+                                        </p>
+                                    </div>
+                                )}
+
+                                {activeTab === "settings" && (
+                                    <div className="space-y-4 pt-4">
+                                        <div className="bg-white/60 border border-rose-200 rounded-2xl p-4">
+                                            <h4 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-4">Repository Config</h4>
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-neutral-500 uppercase ml-1">Current Repo</label>
+                                                    <div className="mt-1 flex items-center gap-2 bg-white border border-rose-100 rounded-xl px-3 py-2">
+                                                        <BiLinkExternal className="text-rose-400" size={16} />
+                                                        <span className="text-sm text-neutral-700 truncate">{githubUser}/{repoName}</span>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={() => navigate("/repo-setup")}
+                                                    className="w-full py-2.5 bg-rose-50 text-rose-600 text-sm font-bold rounded-xl border border-rose-200 hover:bg-rose-100 transition-colors"
+                                                >
+                                                    Change Repository
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-white/60 border border-rose-200 rounded-2xl p-4">
+                                            <h4 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-4">Account</h4>
+                                            <button 
+                                                onClick={handleLogout}
+                                                className="w-full flex items-center justify-center gap-2 py-2.5 bg-red-50 text-red-600 text-sm font-bold rounded-xl border border-red-100 hover:bg-red-100 transition-colors"
+                                            >
+                                                <BiLogOut size={18} />
+                                                Disconnect GitHub
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        {bottomTab === "stats" && (
+                            <div className="flex flex-col items-center justify-center h-full pt-20 text-center px-6">
+                                <div className="h-16 w-16 bg-rose-100 rounded-full flex items-center justify-center text-rose-500 mb-4">
+                                    <BiStats size={32} />
+                                </div>
+                                <h3 className="text-lg font-bold text-neutral-900">Sync Statistics</h3>
+                                <p className="text-sm text-neutral-500 mt-2">
+                                    Track your progress and sync metrics here.
+                                </p>
+                                <div className="mt-6 p-4 bg-white/60 border border-rose-200 rounded-2xl w-full">
+                                    <p className="text-xs font-bold text-rose-500 uppercase tracking-widest">Coming Soon</p>
+                                    <p className="text-xs text-neutral-400 mt-1">Beta version focuses on core sync functionality.</p>
                                 </div>
                             </div>
                         )}
 
-                        {activeTab === "settings" && (
-                            <div className="space-y-4 p-4">
-                                <section className="rounded-xl border border-rose-200 bg-white p-3.5">
-                                    <div className="mb-3 flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <IoLogoGithub
-                                                size={14}
-                                                className="text-[#2A2A2C]"
-                                            />
-                                            <span className="text-[13px] font-medium text-[#2A2A2C]">
-                                                Priyanshudotdev/Nexus
-                                            </span>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            className="rounded-md p-1.5 transition-colors hover:bg-rose-50"
-                                        >
-                                            <BiPencil
-                                                size={12}
-                                                className="text-zinc-500"
-                                            />
-                                        </button>
-                                    </div>
-
-                                    <div className="flex items-center gap-4 text-[11px] text-zinc-500">
-                                        <div className="flex items-center gap-1.5">
-                                            <BiCode size={11} />
-                                            <span>main</span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <BiFile size={11} />
-                                            <span>solutions/</span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <BiTargetLock size={11} />
-                                            <span>public</span>
-                                        </div>
-                                    </div>
-                                </section>
-
-                                <section className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1.5">
-                                        <label
-                                            htmlFor="branch"
-                                            className="ml-1 text-[11px] font-medium text-zinc-500"
-                                        >
-                                            branch
-                                        </label>
-                                        <input
-                                            id="branch"
-                                            type="text"
-                                            placeholder="main"
-                                            className="w-full rounded-lg border border-rose-200 bg-white px-3 py-2 text-[12px] focus:border-rose-300 focus:outline-none"
-                                        />
-                                    </div>
-
-                                    <div className="space-y-1.5">
-                                        <label
-                                            htmlFor="base-path"
-                                            className="ml-1 text-[11px] font-medium text-zinc-500"
-                                        >
-                                            base path
-                                        </label>
-                                        <input
-                                            id="base-path"
-                                            type="text"
-                                            placeholder="e.g. solutions"
-                                            className="w-full rounded-lg border border-rose-200 bg-white px-3 py-2 text-[12px] focus:border-rose-300 focus:outline-none"
-                                        />
-                                    </div>
-                                </section>
-
-                                <section className="space-y-2 pt-1">
-                                    <button
-                                        type="button"
-                                        className="h-9 w-full rounded-lg bg-[#2A2A2C] text-[13px] font-medium text-[#FEF6F8] transition-opacity hover:opacity-90"
-                                    >
-                                        Save Settings
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        className="h-9 w-full rounded-lg border border-rose-200 bg-transparent text-[13px] font-medium text-[#2A2A2C]"
-                                    >
-                                        Test Connection
-                                    </button>
-                                </section>
-
-                                <div className="pt-2 text-center">
-                                    <button
-                                        type="button"
-                                        className="text-[12px] text-zinc-400 transition-colors hover:text-red-700"
-                                    >
-                                        disconnect github
-                                    </button>
+                        {bottomTab === "explore" && (
+                            <div className="flex flex-col items-center justify-center h-full pt-20 text-center px-6">
+                                <div className="h-16 w-16 bg-rose-100 rounded-full flex items-center justify-center text-rose-500 mb-4">
+                                    <BiCog size={32} />
+                                </div>
+                                <h3 className="text-lg font-bold text-neutral-900">Settings & Explore</h3>
+                                <p className="text-sm text-neutral-500 mt-2">
+                                    Customize your experience and explore new features.
+                                </p>
+                                <div className="mt-6 p-4 bg-white/60 border border-rose-200 rounded-2xl w-full">
+                                    <p className="text-xs font-bold text-rose-500 uppercase tracking-widest">Coming Soon</p>
+                                    <p className="text-xs text-neutral-400 mt-1">More configuration options are on the way.</p>
                                 </div>
                             </div>
                         )}
                     </div>
+
+                    {/* Bottom Navigation */}
+                    <footer className="flex items-center justify-around px-6 py-4 border-t border-rose-100 bg-white/50 backdrop-blur-sm shrink-0">
+                        <button 
+                            onClick={() => setBottomTab("dashboard")}
+                            className={`flex flex-col items-center gap-1 transition-colors ${
+                                bottomTab === "dashboard" ? "text-rose-600" : "text-neutral-400 hover:text-neutral-600"
+                            }`}
+                        >
+                            <BiHomeAlt size={22} />
+                            <span className="text-[10px] font-bold uppercase tracking-tighter">Dashboard</span>
+                        </button>
+                        <button 
+                            onClick={() => setBottomTab("stats")}
+                            className={`flex flex-col items-center gap-1 transition-colors ${
+                                bottomTab === "stats" ? "text-rose-600" : "text-neutral-400 hover:text-neutral-600"
+                            }`}
+                        >
+                            <BiStats size={22} />
+                            <span className="text-[10px] font-bold uppercase tracking-tighter">Stats</span>
+                        </button>
+                        <button 
+                            onClick={() => setBottomTab("explore")}
+                            className={`flex flex-col items-center gap-1 transition-colors ${
+                                bottomTab === "explore" ? "text-rose-600" : "text-neutral-400 hover:text-neutral-600"
+                            }`}
+                        >
+                            <BiCog size={22} />
+                            <span className="text-[10px] font-bold uppercase tracking-tighter">Settings</span>
+                        </button>
+                    </footer>
                 </div>
             </section>
         </Layout>
