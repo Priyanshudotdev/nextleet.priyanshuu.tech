@@ -2,10 +2,10 @@ import { cn } from "../../shared/utils";
 
 const Logo = ({ className }: { className?: string }) => {
     return (
-        <div className={cn("flex items-center z-10 justify-center w-auto", className || "size-38")}>
+        <div className="flex items-center z-10 justify-center w-auto">
             <img
                 src="./nextleet.svg"
-                className="rounded-full object-cover"
+                className={cn("rounded-full object-cover", className || "size-38")}
                 alt="Logo"
                 width={200}
                 height={200}
